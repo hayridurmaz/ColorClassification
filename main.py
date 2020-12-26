@@ -1,4 +1,3 @@
-import binascii
 import csv
 import math
 import operator
@@ -6,11 +5,6 @@ import os
 
 import cv2
 import numpy as np
-import scipy
-import scipy.misc
-import scipy.cluster
-from PIL import Image
-import matplotlib.pyplot as plt
 
 
 # calculation of euclidead distance
@@ -79,20 +73,23 @@ def predict(training_data, test_data):
     return classifier_prediction
 
 
-def color_histogram_of_image(img, isTraining, label=None, mask=None):
+def color_histogram_of_image(image, isTraining, label=None, mask=None):
+    green = 0
+    blue = 0
     features = []
     counter = 0
-    channels = cv2.split(img)
+    channels = cv2.split(image)
     colors = ('b', 'g', 'r')
     feature_data = ''
-    for (i, col) in zip(channels, colors):  # Loop over the image channels
+    for (idx, col) in zip(channels, colors):  # Loop over the image channels
+        # This is in order to get rid off the background colors
         histogramUpperLimit = 250
         histogramLowerLimit = 5
         if label == "White":
             histogramUpperLimit = 256
         if label == "Black":
             histogramLowerLimit = 0
-        hist = cv2.calcHist([i], [0], mask, [256],
+        hist = cv2.calcHist([idx], [0], mask, [256],
                             [histogramLowerLimit, histogramUpperLimit])  # Create a histogram for current channel
         features.extend(hist)
         elem = np.argmax(hist)  # find the peak pixel values for R, G, and B
@@ -105,11 +102,11 @@ def color_histogram_of_image(img, isTraining, label=None, mask=None):
             feature_data = red + ',' + green + ',' + blue
         counter = counter + 1
     if isTraining:
-        with open('training.data', 'a') as file:
-            file.write(feature_data + ',' + label + '\n')
+        with open('training.data', 'a') as fileToBeWritten:
+            fileToBeWritten.write(feature_data + ',' + label + '\n')
     else:
-        with open('test.data', 'a') as file:
-            file.write(feature_data + '\n')
+        with open('test.data', 'a') as fileToBeWritten:
+            fileToBeWritten.write(feature_data + '\n')
     return feature_data
 
 
@@ -117,16 +114,16 @@ def training():
     # red color training images
     for color in os.listdir('./training_dataset'):
         path = "./training_dataset/" + color + "/"
-        for file in os.listdir('./training_dataset/' + color):
-            img = cv2.imread(path + file)  # Load the image
-            color_histogram_of_image(img, True, color)
+        for fileToBeWritten in os.listdir('./training_dataset/' + color):
+            image = cv2.imread(path + fileToBeWritten)  # Load the image
+            color_histogram_of_image(image, True, color)
 
 
 def cleanFiles():
-    with open('test.data', 'w') as file:
-        file.write('')
-    with open('training.data', 'w') as file:
-        file.write('')
+    with open('test.data', 'w') as fileToBeWritten:
+        fileToBeWritten.write('')
+    with open('training.data', 'w') as fileToBeWritten:
+        fileToBeWritten.write('')
 
 
 if __name__ == '__main__':
