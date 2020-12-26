@@ -115,9 +115,9 @@ def color_histogram_of_image(img, isTraining, label=None, mask=None):
 
 def training():
     # red color training images
-    for color in os.listdir('./training_dataset/colors'):
-        path = "./training_dataset/colors/" + color + "/"
-        for file in os.listdir('./training_dataset/colors/' + color):
+    for color in os.listdir('./training_dataset'):
+        path = "./training_dataset/" + color + "/"
+        for file in os.listdir('./training_dataset/' + color):
             img = cv2.imread(path + file)  # Load the image
             color_histogram_of_image(img, True, color)
 
