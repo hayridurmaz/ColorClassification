@@ -1,4 +1,7 @@
 import binascii
+import csv
+import math
+import operator
 import os
 
 import cv2
@@ -10,7 +13,73 @@ from PIL import Image
 import matplotlib.pyplot as plt
 
 
-def color_histogram_of_image(img, isTraining, label, mask=None):
+# calculation of euclidead distance
+def calculateEuclideanDistance(x1, x2, length):
+    distance = 0
+    for x in range(length):
+        distance += pow(x1[x] - x2[x], 2)
+    return math.sqrt(distance)
+
+
+# Load image feature data to training feature vectors and test feature vector
+def loadDataset(training_filename, test_filename, training_feature_vector=[], test_feature_vector=[]):
+    append_to_vector(training_filename, training_feature_vector)
+    append_to_vector(test_filename, test_feature_vector)
+
+
+def append_to_vector(filename, training_feature_vector):
+    with open(filename) as csvfile:
+        lines = csv.reader(csvfile)
+        dataset = list(lines)
+        for x in range(len(dataset)):
+            for y in range(3):
+                dataset[x][y] = float(dataset[x][y])
+            training_feature_vector.append(dataset[x])
+
+
+# get k nearest neigbors
+def kNearestNeighbors(training_feature_vector, testInstance, k):
+    distances = []
+    length = len(testInstance)
+    for x in range(len(training_feature_vector)):
+        dist = calculateEuclideanDistance(testInstance,
+                                          training_feature_vector[x], length)
+        distances.append((training_feature_vector[x], dist))
+    distances.sort(key=operator.itemgetter(1))
+    neighbors = []
+    for x in range(k):
+        neighbors.append(distances[x][0])
+    return neighbors
+
+
+# votes of neighbors
+def responseOfNeighbors(neighbors):
+    all_possible_neighbors = {}
+    for x in range(len(neighbors)):
+        response = neighbors[x][-1]
+        if response in all_possible_neighbors:
+            all_possible_neighbors[response] += 1
+        else:
+            all_possible_neighbors[response] = 1
+    sortedVotes = sorted(all_possible_neighbors.items(),
+                         key=operator.itemgetter(1), reverse=True)
+    return sortedVotes[0][0]
+
+
+def predict(training_data, test_data):
+    training_feature_vector = []  # training feature vector
+    test_feature_vector = []  # test feature vector
+    loadDataset(training_data, test_data, training_feature_vector, test_feature_vector)
+    classifier_prediction = []  # predictions
+    k = 3  # K value of k nearest neighbor
+    for x in range(len(test_feature_vector)):
+        neighbors = kNearestNeighbors(training_feature_vector, test_feature_vector[x], k)
+        result = responseOfNeighbors(neighbors)
+        classifier_prediction.append(result)
+    return classifier_prediction[0]
+
+
+def color_histogram_of_image(img, isTraining, label=None, mask=None):
     features = []
     counter = 0
     channels = cv2.split(img)
@@ -36,10 +105,12 @@ def color_histogram_of_image(img, isTraining, label, mask=None):
             feature_data = red + ',' + green + ',' + blue
         counter = counter + 1
     if isTraining:
-        with open('training.data', 'a') as myfile:
-            myfile.write(feature_data + ',' + label + '\n')
+        with open('training.data', 'a') as file:
+            file.write(feature_data + ',' + label + '\n')
     else:
-        print("else")
+        with open('test.data', 'a') as file:
+            file.write(feature_data + '\n')
+    return feature_data
 
 
 def training():
@@ -51,39 +122,26 @@ def training():
             color_histogram_of_image(img, True, color)
 
 
-def findDominantColor(im):
-    NUM_CLUSTERS = 5
-
-    print('reading image')
-    # im = im.resize((150, 150))  # optional, to reduce time
-    ar = np.asarray(im)
-    shape = ar.shape
-    ar = ar.reshape(np.product(shape[:2]), shape[2]).astype(float)
-
-    print('finding clusters')
-    codes, dist = scipy.cluster.vq.kmeans(ar, NUM_CLUSTERS)
-    print('cluster centres:\n', codes)
-
-    vecs, dist = scipy.cluster.vq.vq(ar, codes)  # assign codes
-    counts, bins = np.histogram(vecs, len(codes))  # count occurrences
-
-    index_max = np.argmax(counts)  # find most frequent
-    peak = codes[index_max]
-    colour = binascii.hexlify(bytearray(int(c) for c in peak)).decode('ascii')
-    print('most frequent is %s (#%s)' % (peak, colour))
+def cleanFiles():
+    with open('test.data', 'w') as file:
+        file.write('')
+    with open('training.data', 'w') as file:
+        file.write('')
 
 
 if __name__ == '__main__':
-    # data = pd.read_csv("data/final_data.csv")
-    # print(data)
-
-    # images = []
-    # path = "images/"
-    # for image in os.listdir(path):
-    #     images.append(image)
-    #
-    # for image in images:
-    #     img = cv2.imread("%s%s" % (path, image))  # Load the image
-    #     color_histogram_of_image(img, True, "black")
-
+    # read the test image
+    cleanFiles()
+    PATH = 'training.data'  # checking whether the training data is ready
+    print('training data is being created...')
+    open('training.data', 'a')
     training()
+    print('training data is ready, classifier is loading...')
+
+    for file in os.listdir('./images'):
+        img = cv2.imread('./images/' + file)  # Load the image
+        max_histogram = color_histogram_of_image(img, False)
+        # get the prediction
+
+        prediction = predict('training.data', 'test.data')
+        print('Detected color is:', prediction)
