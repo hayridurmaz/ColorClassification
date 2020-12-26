@@ -1,4 +1,5 @@
 # Color classification using ML and feature extraction
 
+## USAGE
 
-PS: Thanks a lot _**Ajinkya Chavan**_ for the data!
+put images onto `/images` folder and run main.py

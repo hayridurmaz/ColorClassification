@@ -130,7 +130,6 @@ def cleanFiles():
 
 
 if __name__ == '__main__':
-    # read the test image
     cleanFiles()
     training()
     for file in os.listdir('./images'):  # Iterate over test image folder
