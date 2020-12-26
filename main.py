@@ -76,7 +76,7 @@ def predict(training_data, test_data):
         neighbors = kNearestNeighbors(training_feature_vector, test_feature_vector[x], k)
         result = responseOfNeighbors(neighbors)
         classifier_prediction.append(result)
-    return classifier_prediction[0]
+    return classifier_prediction
 
 
 def color_histogram_of_image(img, isTraining, label=None, mask=None):
@@ -132,16 +132,12 @@ def cleanFiles():
 if __name__ == '__main__':
     # read the test image
     cleanFiles()
-    PATH = 'training.data'  # checking whether the training data is ready
-    print('training data is being created...')
-    open('training.data', 'a')
     training()
-    print('training data is ready, classifier is loading...')
-
+    for file in os.listdir('./images'):  # Iterate over test image folder
+        img = cv2.imread('./images/' + file)  # Load the test image
+        color_histogram_of_image(img, False)  # For each image, write the histogram onto the file
+    prediction = predict('training.data', 'test.data')  # get the predictions of test images
+    i = 0
     for file in os.listdir('./images'):
-        img = cv2.imread('./images/' + file)  # Load the image
-        max_histogram = color_histogram_of_image(img, False)
-        # get the prediction
-
-        prediction = predict('training.data', 'test.data')
-        print('Detected color is:', prediction)
+        print(file + ' : ' + prediction[i])
+        i = i + 1
