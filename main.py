@@ -65,7 +65,7 @@ def predict(training_data, test_data):
     test_feature_vector = []  # test feature vector
     loadDataset(training_data, test_data, training_feature_vector, test_feature_vector)
     classifier_prediction = []  # predictions
-    k = 3  # K value of k nearest neighbor
+    k = 1  # K value of k nearest neighbor
     for x in range(len(test_feature_vector)):
         neighbors = kNearestNeighbors(training_feature_vector, test_feature_vector[x], k)
         result = responseOfNeighbors(neighbors)
@@ -134,6 +134,29 @@ if __name__ == '__main__':
         color_histogram_of_image(img, False)  # For each image, write the histogram onto the file
     prediction = predict('training.data', 'test.data')  # get the predictions of test images
     i = 0
+    correctPrediction = 0
+    classificationRates = {}
+    numberOfImage = {}
+    for file in os.listdir('./training_dataset'):
+        colorname = file.lower()
+        classificationRates[colorname] = 0
+        numberOfImage[colorname] = 0
+
     for file in os.listdir('./images'):
-        print(file + ' : ' + prediction[i])
+        colorname = file[0:file.index("_")].lower()
+        if colorname == prediction[i].lower():
+            classificationRates[colorname] = classificationRates[colorname] + 1
+            correctPrediction = correctPrediction + 1
+            print("TRUE: " + file + ' : ' + prediction[i])
+        else:
+            print("FALSE: " + file + ' : ' + prediction[i])
         i = i + 1
+        numberOfImage[colorname] = numberOfImage[colorname] + 1
+
+    for file in os.listdir('./training_dataset'):
+        colorname = file.lower()
+        accuracy = classificationRates[colorname] / numberOfImage[colorname]
+        print(colorname + " accuracy: " + str(accuracy))
+
+    accuracy = correctPrediction / len(prediction)
+    print("Total accuracy: " + str(accuracy))
